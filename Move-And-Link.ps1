@@ -1,6 +1,9 @@
 param (
     [Parameter(Mandatory = $true)]
-    [string]$SourceDir
+    [string]$SourceDir,
+
+    [Parameter(Mandatory = $false)]
+    [string]$FolderName
 )
 
 $ErrorActionPreference = 'Stop'
@@ -8,7 +11,11 @@ Set-StrictMode -Version Latest
 
 try {
     $SourceDir = (Resolve-Path -LiteralPath $SourceDir).ProviderPath
-    $FolderName = Split-Path $SourceDir -Leaf
+
+    if (-not $FolderName) {
+        $FolderName = Split-Path $SourceDir -Leaf
+    }
+
     $TargetRoot = 'W:\junction'
     $TargetDir  = Join-Path $TargetRoot $FolderName
 
@@ -29,7 +36,7 @@ try {
     }
 
     # Move the directory as a whole
-    Move-Item -LiteralPath $SourceDir -Destination $TargetRoot
+    Move-Item -LiteralPath $SourceDir -Destination $TargetDir
 
     # Create junction at original location
     New-Item -ItemType Junction -Path $SourceDir -Target $TargetDir | Out-Null
