@@ -1,34 +1,62 @@
 <#
 .SYNOPSIS
-    Scans specified directories for folders, proposes junctions, and remembers ignored choices.
+    Scans specified directories for folders, proposes junctions, and handles collision detection.
 .DESCRIPTION
-    1. Scans $WatchPaths.
-    2. Filters out exclusions, existing junctions, AND items in 'junction_ignore_list.txt'.
-    3. User selects folders to process in a GUI.
-    4. Unselected items are added to the ignore list.
-    5. Script SHOWS A SUMMARY of selected items and asks for final confirmation.
-    6. Selected items are moved and junctioned.
+    1. Scans WatchPaths (including UserProfile, Local, LocalLow, Roaming).
+    2. Filters exclusions and User Profile defaults.
+    3. Prevents target naming collisions during the scan phase.
+    4. User selects folders to process.
+    5. Performs Moves/Junctions.
+    6. Asks user specifically if they want to ignore the unselected items at the end.
 #>
+
+param(
+    [switch]$SSD
+)
 
 # --- CONFIGURATION ---
 
-$TargetRoot = 'W:\junction'
+if ($SSD) {
+    $TargetRoot = 'E:\junction'
+} else {
+    $TargetRoot = 'W:\junction'
+}
 
 $WatchPaths = @(
+    "$env:USERPROFILE",
     "$env:USERPROFILE\AppData\Local",
+    "$env:USERPROFILE\AppData\LocalLow",
     "$env:USERPROFILE\AppData\Roaming"
 )
 
-# Regex Exclusions (System critical folders)
+# Regex Exclusions (System critical folders & Windows Defaults)
 $Exclusions = @(
     "^Microsoft$",
     "^Temp$",
     "^Packages$",
     "^Google$",
-    "^NVIDIA"
+    "^NVIDIA$",
+    "^AppData$",              # Don't move the root AppData (we scan inside it)
+    "^Application Data$",     # Legacy junction
+    "^Local Settings$",       # Legacy junction
+    "^NetHood$", "^PrintHood$", "^Cookies$", "^Recent$", "^SendTo$", "^Templates$", "^Start Menu$",
+    # Standard User Profile Folders to exclude by default:
+    "^Documents$",
+    "^Pictures$",
+    "^Desktop$",
+    "^Downloads$",
+    "^Music$",
+    "^Videos$",
+    "^Saved Games$",
+    "^Favorites$",
+    "^Links$",
+    "^Contacts$",
+    "^Searches$",
+    "^3D Objects$",
+    "^OneDrive$"
 )
 
-# Persistence File (Saved next to the script)
+# Persistence File
 $IgnoreFile = Join-Path $PSScriptRoot "junction_ignore_list.txt"
 
 # --- END CONFIGURATION ---
@@ -39,19 +67,6 @@ $ErrorActionPreference = 'Stop'
 $IgnoredPaths = @()
 if (Test-Path $IgnoreFile) {
     $IgnoredPaths = Get-Content $IgnoreFile | Where-Object { $_ -ne "" }
-}
-
-# Helper: Resolve collisions
-function Get-UniqueTarget {
-    param ($Root, $FolderName, $ParentName)
-    $Path = Join-Path $Root $FolderName
-    if (-not (Test-Path $Path)) { return $Path }
-    
-    $SuffixName = "$FolderName-$ParentName"
-    $SuffixPath = Join-Path $Root $SuffixName
-    if (-not (Test-Path $SuffixPath)) { return $SuffixPath }
-    
-    return $null
 }
 
 # Helper: Append to ignore file
@@ -74,6 +89,9 @@ if (-not (Test-Path $TargetRoot)) {
 }
 
 $Candidates = @()
+# Track targets reserved in THIS session to prevent "Same Name" collisions
+$ReservedTargets = New-Object System.Collections.Generic.HashSet[string]
+
 Write-Host "Scanning directories..." -ForegroundColor Cyan
 
 # 3. Scan
@@ -96,11 +114,26 @@ foreach ($WatchPath in $WatchPaths) {
         }
         if ($IsExcluded) { continue }
 
-        # Calculate Target
+        # --- COLLISION LOGIC ---
         $ParentName = Split-Path (Split-Path $Folder.FullName -Parent) -Leaf
-        $ProposedTarget = Get-UniqueTarget -Root $TargetRoot -FolderName $Folder.Name -ParentName $ParentName
+        
+        # 1. Try exact name
+        $ProposedPath = Join-Path $TargetRoot $Folder.Name
+        
+        # Check if exists on DISK or if we already RESERVED it in this specific scan loop
+        if ((Test-Path $ProposedPath) -or ($ReservedTargets.Contains($ProposedPath))) {
+            # 2. Collision found: Try Name-ParentName
+            $ProposedPath = Join-Path $TargetRoot "$($Folder.Name)-$($ParentName)"
+            
+            # If that also exists/reserved, skip it to be safe (or add manual logic here)
+            if ((Test-Path $ProposedPath) -or ($ReservedTargets.Contains($ProposedPath))) {
+                Write-Warning "Skipping $($Folder.FullName) - could not generate unique target name."
+                continue 
+            }
+        }
 
-        if ($null -eq $ProposedTarget) { continue }
+        # Reserve this path so the next folder in the loop can't take it
+        [void]$ReservedTargets.Add($ProposedPath)
 
         # Safe Size Calculation
         $Stats = Get-ChildItem $Folder.FullName -Recurse -File -ErrorAction SilentlyContinue | Measure-Object -Property Length -Sum
@@ -112,7 +145,7 @@ foreach ($WatchPath in $WatchPaths) {
         $Candidates += [PSCustomObject]@{
             FolderName   = $Folder.Name
             Source       = $Folder.FullName
-            Target       = $ProposedTarget
+            Target       = $ProposedPath
             SizeMB       = "{0:N2}" -f $SizeMB
             Parent       = $ParentName
         }
@@ -127,29 +160,23 @@ if ($Candidates.Count -eq 0) {
 # 4. GUI Selection
 Write-Host "Found $($Candidates.Count) new candidates." -ForegroundColor Cyan
 Write-Host "Select folders to JUNCTION."
-Write-Host "Any folders visible here that you do NOT select will be added to the Ignore List." -ForegroundColor Yellow
-$ToProcess = $Candidates | Out-GridView -Title "Select to Junction (Others will be Ignored)" -PassThru
+$ToProcess = $Candidates | Out-GridView -Title "Select folders to Junction" -PassThru
 
 # 5. Handle "Nothing Selected" case
 if (-not $ToProcess) {
     Write-Host "No folders selected." -ForegroundColor Yellow
-    $confirm = Read-Host "Do you want to add all displayed folders to the ignore list so they don't show up again? (y/n)"
-    if ($confirm -eq 'y') {
-        Add-ToIgnoreList -Paths $Candidates.Source
-    }
+    # $confirm = Read-Host "Do you want to add ALL displayed folders to the ignore list? (y/n)"
+    # if ($confirm -eq 'y') {
+    #     Add-ToIgnoreList -Paths $Candidates.Source
+    # }
     exit
 }
 
-# 6. Handle "Something Selected" case
-# Identify what was NOT selected to add to ignore list
+# 6. Separate Lists (But don't ignore yet)
 $SelectedSources = $ToProcess.Source
-$IgnoredCandidates = $Candidates | Where-Object { $_.Source -notin $SelectedSources }
+$UnselectedCandidates = $Candidates | Where-Object { $_.Source -notin $SelectedSources }
 
-if ($IgnoredCandidates) {
-    Add-ToIgnoreList -Paths $IgnoredCandidates.Source
-}
-
-# --- NEW: FINAL CONFIRMATION STEP ---
+# 7. FINAL CONFIRMATION
 Clear-Host
 Write-Host "--- SUMMARY OF ACTIONS ---" -ForegroundColor Yellow
 foreach ($Item in $ToProcess) {
@@ -169,9 +196,8 @@ if ($FinalCheck -ne 'y') {
     Write-Host "Operation cancelled. No files were moved." -ForegroundColor Yellow
     exit
 }
-# ------------------------------------
 
-# 7. Process Junctions
+# 8. Process Junctions
 foreach ($Item in $ToProcess) {
     try {
         Write-Host "Processing: $($Item.FolderName)..." -ForegroundColor Cyan
@@ -195,5 +221,17 @@ foreach ($Item in $ToProcess) {
     }
 }
 
-Write-Host "Complete." -ForegroundColor Green
+Write-Host "`nOperations Complete." -ForegroundColor Green
+
+# 9. Post-Process: Ask to Ignore
+if ($UnselectedCandidates) {
+    Write-Host "`nYou chose NOT to process the following folders:" -ForegroundColor Yellow
+    $UnselectedCandidates | ForEach-Object { Write-Host " - $($_.Source)" -ForegroundColor Gray }
+    
+    $IgnoreConfirm = Read-Host "`nDo you want to add these unselected folders to the Ignore List? (y/n)"
+    if ($IgnoreConfirm -eq 'y') {
+        Add-ToIgnoreList -Paths $UnselectedCandidates.Source
+    }
+}
+
 Start-Sleep -Seconds 3
