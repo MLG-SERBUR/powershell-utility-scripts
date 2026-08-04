@@ -24,6 +24,7 @@ if ($SSD) {
 
 $WatchPaths = @(
     "$env:USERPROFILE",
+    "$env:USERPROFILE\.local",
     "$env:USERPROFILE\AppData\Local",
     "$env:USERPROFILE\AppData\LocalLow",
     "$env:USERPROFILE\AppData\Roaming"
@@ -37,6 +38,7 @@ $Exclusions = @(
     "^Google$",
     "^NVIDIA$",
     "^AppData$",              # Don't move the root AppData (we scan inside it)
+    "^\.local$",
     "^Application Data$",     # Legacy junction
     "^Local Settings$",       # Legacy junction
     "^NetHood$", "^PrintHood$", "^Cookies$", "^Recent$", "^SendTo$", "^Templates$", "^Start Menu$",
