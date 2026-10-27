@@ -201,57 +201,79 @@ if ($FinalCheck -ne 'y') {
 
 # 8. Process Junctions
 foreach ($Item in $ToProcess) {
+    $OriginalRecycled = $false
     try {
         Write-Host "Processing: $($Item.FolderName)..." -ForegroundColor Cyan
         
-        if (Test-Path $Item.Target) {
-            Write-Error "Target $($Item.Target) exists (race condition). Skipping."
-            continue
+        if (Test-Path -LiteralPath $Item.Target) {
+            throw "Target $($Item.Target) exists (race condition)."
         }
 
-        # Attempt Move
-        Move-Item -LiteralPath $Item.Source -Destination $Item.Target -Force -ErrorAction Stop
+        # Copy first so a failed copy never removes the original.
+        & robocopy.exe $Item.Source $Item.Target /E /COPY:DAT /DCOPY:DAT /SL /SJ /R:1 /W:1
+        $CopyExitCode = $LASTEXITCODE
+        if ($CopyExitCode -ge 8) {
+            throw "Robocopy failed with exit code $CopyExitCode. The original remains in place; the target may contain a partial copy."
+        }
 
-        # Create Junction
+        Add-Type -AssemblyName Microsoft.VisualBasic
+        [Microsoft.VisualBasic.FileIO.FileSystem]::DeleteDirectory(
+            $Item.Source,
+            [Microsoft.VisualBasic.FileIO.UIOption]::OnlyErrorDialogs,
+            [Microsoft.VisualBasic.FileIO.RecycleOption]::SendToRecycleBin
+        )
+        $OriginalRecycled = -not (Test-Path -LiteralPath $Item.Source)
+        if (-not $OriginalRecycled) {
+            throw "Could not move the original folder to the Recycle Bin; the original remains in place."
+        }
+
         New-Item -ItemType Junction -Path $Item.Source -Target $Item.Target | Out-Null
-        
+
         Write-Host "  [OK] Success" -ForegroundColor Green
     }
     catch {
         $ProcessError = $_
-        $SourceExists = Test-Path -LiteralPath $Item.Source
-        $TargetExists = Test-Path -LiteralPath $Item.Target
-
-        if (-not $SourceExists -and $TargetExists) {
+        if ($OriginalRecycled -and (Test-Path -LiteralPath $Item.Target)) {
             try {
-                Move-Item -LiteralPath $Item.Target -Destination $Item.Source -ErrorAction Stop
-                Write-Warning "Failed to process $($Item.FolderName), but the move was rolled back to '$($Item.Source)'. Error: $ProcessError"
+                if (Test-Path -LiteralPath $Item.Source) {
+                    $SourceItem = Get-Item -LiteralPath $Item.Source -Force -ErrorAction Stop
+                    if ($SourceItem.LinkType -ne 'Junction' -or
+                        $SourceItem.Target -notcontains $Item.Target) {
+                        throw "The source path exists and is not the junction created by this run."
+                    }
+                    Remove-Item -LiteralPath $Item.Source -Force -ErrorAction Stop
+                }
+
+                & robocopy.exe $Item.Target $Item.Source /E /COPY:DAT /DCOPY:DAT /SL /SJ /R:1 /W:1
+                $RestoreExitCode = $LASTEXITCODE
+                if ($RestoreExitCode -ge 8) {
+                    throw "Robocopy restore failed with exit code $RestoreExitCode."
+                }
+                Write-Warning "Failed to create a junction for $($Item.FolderName). The original contents were copied back from the target; the original folder remains in the Recycle Bin. The target was left untouched. Error: $ProcessError"
             }
             catch {
-                Write-Warning "Failed to process $($Item.FolderName), and automatic rollback also failed. The data remains at '$($Item.Target)'. Original error: $ProcessError Rollback error: $_"
+                Write-Warning "Failed to create a junction for $($Item.FolderName), and automatic restoration also failed. The original folder is in the Recycle Bin, and the copied data remains at '$($Item.Target)'. Original error: $ProcessError Restore error: $_"
             }
-        }
-        elseif ($SourceExists -and $TargetExists) {
-            $SourceItem = Get-Item -LiteralPath $Item.Source -Force -ErrorAction SilentlyContinue
-            if ($SourceItem -and $SourceItem.LinkType -eq 'Junction') {
-                Write-Warning "Processing $($Item.FolderName) reported an error, but its source is already a junction. Verify the target '$($Item.Target)'. Error: $ProcessError"
-            }
-            else {
-                Write-Warning "Failed to process $($Item.FolderName). The original remains at '$($Item.Source)', and '$($Item.Target)' may be a partial copy. Neither was deleted. Error: $ProcessError"
-            }
-        }
-        elseif ($SourceExists) {
-            Write-Warning "Failed to process $($Item.FolderName). The original remains at '$($Item.Source)'. Error: $ProcessError"
         }
         else {
-            Write-Warning "Failed to process $($Item.FolderName), and neither the source nor target path exists. Check both paths before retrying. Error: $ProcessError"
+            $SourceExists = Test-Path -LiteralPath $Item.Source
+            $TargetExists = Test-Path -LiteralPath $Item.Target
+            if ($SourceExists -and $TargetExists) {
+                Write-Warning "Failed to process $($Item.FolderName). The original remains at '$($Item.Source)', and '$($Item.Target)' may be a partial copy. Neither was deleted. Error: $ProcessError"
+            }
+            elseif ($SourceExists) {
+                Write-Warning "Failed to process $($Item.FolderName). The original remains at '$($Item.Source)'. Error: $ProcessError"
+            }
+            else {
+                Write-Warning "Failed to process $($Item.FolderName), and the original is not at '$($Item.Source)'. Check '$($Item.Target)' before retrying. Error: $ProcessError"
+            }
         }
 
         if ($ProcessError.Exception.HResult -eq -2147023582 -or
             $ProcessError.Exception.Message -match 'required privilege is not held') {
-            Write-Host "Windows reported that a required privilege is not held. Do not retry until you have checked the source and target paths above." -ForegroundColor Yellow
+            Write-Host "Windows reported that a required privilege is not held. The original data was preserved; check both paths before retrying." -ForegroundColor Yellow
         }
-        else {
+        elseif ($ProcessError.Exception.Message -notmatch 'Robocopy failed') {
             Write-Host "Tip: Make sure the app is completely closed." -ForegroundColor Yellow
         }
     }
