@@ -1,0 +1,115 @@
+C:\Users\Robom\AppData\Local\.IdentityService
+C:\Users\Robom\AppData\Local\Comms
+C:\Users\Robom\AppData\Local\ConnectedDevicesPlatform
+C:\Users\Robom\AppData\Local\Diagnostics
+C:\Users\Robom\AppData\Local\ElevatedDiagnostics
+C:\Users\Robom\AppData\Local\IdentityNexusIntegration
+C:\Users\Robom\AppData\Local\INetHistory
+C:\Users\Robom\AppData\Local\Microsoft_Corporation
+C:\Users\Robom\AppData\Local\PackageManagement
+C:\Users\Robom\AppData\Local\PCHealthCheck
+C:\Users\Robom\AppData\Local\PeerDistRepub
+C:\Users\Robom\AppData\Local\PlaceholderTileLogoFolder
+C:\Users\Robom\AppData\Local\Publishers
+C:\Users\Robom\AppData\Local\speech
+C:\Users\Robom\AppData\Local\State
+C:\Users\Robom\AppData\Local\TelemetryStorageService
+C:\Users\Robom\AppData\Local\ToastNotificationManagerCompat
+C:\Users\Robom\AppData\Local\VirtualStore
+C:\Users\Robom\AppData\Local\Windows Live
+C:\Users\Robom\AppData\Local\WindowsOobeAppHost
+C:\Users\Robom\AppData\Roaming\microsoft.windowscommunicationsapps_16005.14326.21422.0_neutral_~_8wekyb3d8bbwe
+C:\Users\Robom\.android
+C:\Users\Robom\.cagent
+C:\Users\Robom\.dbus-keyrings
+C:\Users\Robom\.lhotse
+C:\Users\Robom\.m2
+C:\Users\Robom\.nuget
+C:\Users\Robom\.redhat
+C:\Users\Robom\.ssh
+C:\Users\Robom\.thumbnails
+C:\Users\Robom\.vscode
+C:\Users\Robom\AppData\Local\__FIRAPP_DEFAULT
+C:\Users\Robom\AppData\Local\Apps
+C:\Users\Robom\AppData\Local\appsflyer
+C:\Users\Robom\AppData\Local\ASP.NET
+C:\Users\Robom\AppData\Local\AudioRelay
+C:\Users\Robom\AppData\Local\AutoDarkMode
+C:\Users\Robom\AppData\Local\AWSToolkit
+C:\Users\Robom\AppData\Local\Backup
+C:\Users\Robom\AppData\Local\bifrost
+C:\Users\Robom\AppData\Local\BIT.TRIP RUNNER
+C:\Users\Robom\AppData\Local\CrashDumps
+C:\Users\Robom\AppData\Local\CrashRpt
+C:\Users\Robom\AppData\Local\filezilla-server-gui
+C:\Users\Robom\AppData\Local\firebase-heartbeat
+C:\Users\Robom\AppData\Local\Gaijin Games
+C:\Users\Robom\AppData\Local\GitHub CLI
+C:\Users\Robom\AppData\Local\github-copilot
+C:\Users\Robom\AppData\Local\gtk-3.0
+C:\Users\Robom\AppData\Local\gtk-4.0
+C:\Users\Robom\AppData\Local\install
+C:\Users\Robom\AppData\Local\install4j
+C:\Users\Robom\AppData\Local\IsolatedStorage
+C:\Users\Robom\AppData\Local\ItTakesTwo
+C:\Users\Robom\AppData\Local\Logitech
+C:\Users\Robom\AppData\Local\Microsoft SDKs
+C:\Users\Robom\AppData\Local\mime
+C:\Users\Robom\AppData\Local\mod.io
+C:\Users\Robom\AppData\Local\Motherboard Utility
+C:\Users\Robom\AppData\Local\MSIAfterburner
+C:\Users\Robom\AppData\Local\Netease
+C:\Users\Robom\AppData\Local\NgConsentManager
+C:\Users\Robom\AppData\Local\NVIDIA Profile Inspector
+C:\Users\Robom\AppData\Local\openvr
+C:\Users\Robom\AppData\Local\Package Cache
+C:\Users\Robom\AppData\Local\plastic4
+C:\Users\Robom\AppData\Local\ProcessLasso
+C:\Users\Robom\AppData\Local\Programs
+C:\Users\Robom\AppData\Local\Sentry
+C:\Users\Robom\AppData\Local\ServiceHub
+C:\Users\Robom\AppData\Local\Splashtop
+C:\Users\Robom\AppData\Local\stalefiles
+C:\Users\Robom\AppData\Local\TankView
+C:\Users\Robom\AppData\Local\TwitchLink
+C:\Users\Robom\AppData\Local\UL
+C:\Users\Robom\AppData\Local\UniCompactView
+C:\Users\Robom\AppData\Local\UniSDK_FirstOpen
+C:\Users\Robom\AppData\Local\VS Revo Group
+C:\Users\Robom\AppData\LocalLow\BK-TN
+C:\Users\Robom\AppData\LocalLow\Daniel Mullins Games
+C:\Users\Robom\AppData\LocalLow\DefaultCompany
+C:\Users\Robom\AppData\LocalLow\EurekaWorks
+C:\Users\Robom\AppData\LocalLow\Pixelatto
+C:\Users\Robom\AppData\LocalLow\Solirax
+C:\Users\Robom\AppData\LocalLow\Techventions
+C:\Users\Robom\AppData\LocalLow\Triangle Factory
+C:\Users\Robom\AppData\LocalLow\VRChat
+C:\Users\Robom\AppData\Roaming\Adobe
+C:\Users\Robom\AppData\Roaming\Arcsoft
+C:\Users\Robom\AppData\Roaming\AudioVisualizerApp
+C:\Users\Robom\AppData\Roaming\AuroraBackups
+C:\Users\Robom\AppData\Roaming\avidemux
+C:\Users\Robom\AppData\Roaming\Battle.net
+C:\Users\Robom\AppData\Roaming\DropIt
+C:\Users\Robom\AppData\Roaming\dvdcss
+C:\Users\Robom\AppData\Roaming\Electronic Arts
+C:\Users\Robom\AppData\Roaming\EurekaLab s.a.s
+C:\Users\Robom\AppData\Roaming\fyne
+C:\Users\Robom\AppData\Roaming\GitHub CLI
+C:\Users\Robom\AppData\Roaming\HotSync
+C:\Users\Robom\AppData\Roaming\IPTVDashboard
+C:\Users\Robom\AppData\Roaming\LogExpert
+C:\Users\Robom\AppData\Roaming\Microsoft Corporation
+C:\Users\Robom\AppData\Roaming\Microsoft FxCop
+C:\Users\Robom\AppData\Roaming\NuGet
+C:\Users\Robom\AppData\Roaming\OutlookNewBlocker
+C:\Users\Robom\AppData\Roaming\ProcessLasso
+C:\Users\Robom\AppData\Roaming\Simplode Suite
+C:\Users\Robom\AppData\Roaming\Subtitle Edit
+C:\Users\Robom\AppData\Roaming\SystemAcCrux
+C:\Users\Robom\AppData\Roaming\Valve Corporation
+C:\Users\Robom\AppData\Roaming\Virtual Desktop
+C:\Users\Robom\AppData\Roaming\Virtual Desktop, Inc
+C:\Users\Robom\AppData\Roaming\Visual Studio Setup
+C:\Users\Robom\AppData\Roaming\VMware
