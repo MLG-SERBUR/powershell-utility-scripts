@@ -218,8 +218,42 @@ foreach ($Item in $ToProcess) {
         Write-Host "  [OK] Success" -ForegroundColor Green
     }
     catch {
-        Write-Error "Failed to move $($Item.FolderName). `nError: $_"
-        Write-Host "Tip: Make sure the app is completely closed." -ForegroundColor Yellow
+        $ProcessError = $_
+        $SourceExists = Test-Path -LiteralPath $Item.Source
+        $TargetExists = Test-Path -LiteralPath $Item.Target
+
+        if (-not $SourceExists -and $TargetExists) {
+            try {
+                Move-Item -LiteralPath $Item.Target -Destination $Item.Source -ErrorAction Stop
+                Write-Warning "Failed to process $($Item.FolderName), but the move was rolled back to '$($Item.Source)'. Error: $ProcessError"
+            }
+            catch {
+                Write-Warning "Failed to process $($Item.FolderName), and automatic rollback also failed. The data remains at '$($Item.Target)'. Original error: $ProcessError Rollback error: $_"
+            }
+        }
+        elseif ($SourceExists -and $TargetExists) {
+            $SourceItem = Get-Item -LiteralPath $Item.Source -Force -ErrorAction SilentlyContinue
+            if ($SourceItem -and $SourceItem.LinkType -eq 'Junction') {
+                Write-Warning "Processing $($Item.FolderName) reported an error, but its source is already a junction. Verify the target '$($Item.Target)'. Error: $ProcessError"
+            }
+            else {
+                Write-Warning "Failed to process $($Item.FolderName). The original remains at '$($Item.Source)', and '$($Item.Target)' may be a partial copy. Neither was deleted. Error: $ProcessError"
+            }
+        }
+        elseif ($SourceExists) {
+            Write-Warning "Failed to process $($Item.FolderName). The original remains at '$($Item.Source)'. Error: $ProcessError"
+        }
+        else {
+            Write-Warning "Failed to process $($Item.FolderName), and neither the source nor target path exists. Check both paths before retrying. Error: $ProcessError"
+        }
+
+        if ($ProcessError.Exception.HResult -eq -2147023582 -or
+            $ProcessError.Exception.Message -match 'required privilege is not held') {
+            Write-Host "Windows reported that a required privilege is not held. Do not retry until you have checked the source and target paths above." -ForegroundColor Yellow
+        }
+        else {
+            Write-Host "Tip: Make sure the app is completely closed." -ForegroundColor Yellow
+        }
     }
 }
 
